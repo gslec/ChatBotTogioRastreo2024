@@ -1,9 +1,7 @@
-'use strict';
+import bot from '@builderbot/bot';
+import mysql from 'mysql2';
 
-var bot = require('@builderbot/bot');
-var mysql = require('mysql2');
-
-class MysqlAdapter extends bot.MemoryDB {
+export class MysqlAdapter extends bot.MemoryDB {
     constructor(_credentials) {
         super();
         this.listHistory = [];
@@ -84,12 +82,11 @@ class MysqlAdapter extends bot.MemoryDB {
                 });
             });
         });
-        
-
 
         this.credentials = _credentials;
         this.init().then();
     }
+
     async init() {
         this.pool = mysql.createPool(this.credentials); // Creamos un pool de conexiones
         this.pool.getConnection(async (error, connection) => { // Obtenemos una conexión del pool
@@ -103,7 +100,4 @@ class MysqlAdapter extends bot.MemoryDB {
             }
         });
     }
-    
 }
-
-exports.MysqlAdapter = MysqlAdapter;
