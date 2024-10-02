@@ -15,7 +15,7 @@ export class MysqlAdapter extends bot.MemoryDB {
         this.getPrevByNumber = async (from) => {
             return await new Promise((resolve, reject) => {
                 const sql = `SELECT * FROM history WHERE phone='${from}' ORDER BY id DESC`;
-                this.db.query(sql, (error, rows) => {
+                this.pool.query(sql, (error, rows) => {
                     if (error) {
                         reject(error);
                     }
@@ -33,7 +33,7 @@ export class MysqlAdapter extends bot.MemoryDB {
         this.save = async (ctx) => {
             const values = [[ctx.ref, ctx.keyword, ctx.answer, ctx.refSerialize, ctx.from, JSON.stringify(ctx.options)]];
             const sql = 'INSERT INTO history (ref, keyword, answer, refSerialize, phone, options) values ?';
-            this.db.query(sql, [values], (err) => {
+            this.pool.query(sql, [values], (err) => {
                 if (err)
                     throw err;
             });
@@ -50,7 +50,7 @@ export class MysqlAdapter extends bot.MemoryDB {
             options longtext NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) 
             CHARACTER SET utf8mb4 COLLATE utf8mb4_General_ci`;
-            this.db.query(sql, (err) => {
+            this.pool.query(sql, (err) => {
                 if (err)
                     throw err;
                 console.log(`Table ${tableName} created successfully`);
