@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { createBot, createProvider, createFlow, addKeyword, utils } from '@builderbot/bot'
-import { MysqlAdapter as Database } from 'src/database-mysql/index.cjs'
+import { MysqlAdapter as Database } from './database-mysql/index.cjs';
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import dotenv from 'dotenv';
 
