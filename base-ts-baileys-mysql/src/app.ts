@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { createBot, createProvider, createFlow, addKeyword, utils } from '@builderbot/bot'
+import { createBot, createProvider, createFlow, addKeyword, utils, EVENTS } from '@builderbot/bot'
 import { MysqlAdapter as Database } from './database-mysql/index.js';
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import dotenv from 'dotenv';
@@ -8,62 +8,58 @@ import dotenv from 'dotenv';
 dotenv.config();
 const PORT = process.env.PORT ?? 3008
 
-const discordFlow = addKeyword<Provider, Database>('doc').addAnswer(
-    ['You can see the documentation here', '📄 https://builderbot.app/docs \n', 'Do you want to continue? *yes*'].join(
-        '\n'
-    ),
-    { capture: true },
-    async (ctx, { gotoFlow, flowDynamic }) => {
-        if (ctx.body.toLocaleLowerCase().includes('yes')) {
-            return gotoFlow(registerFlow)
-        }
-        await flowDynamic('Thanks!')
-        return
-    }
-)
+// Flow para la información de servicios
+const flowInformacion = addKeyword(EVENTS.ACTION)
+    .addAnswer('✨ Me encantaría compartir algunos testimonios de nuestros clientes satisfechos: 📣', {delay:1000})
+    .addAnswer('Testimonio 1', { delay:1000, media: 'https://vpkvukshcvdbdlarercb.supabase.co/storage/v1/object/public/publictogiorastreo/testimonios/Testimonio%20Cecilia%20Bermeo.ogg' })
+    .addAnswer([
+        '*Testimonio #1*',
+        '',
+        'La cliente explica que nuestro GPS está correctamente instalado. Le robaron el carro, pero pudo recuperarlo. Los ladrones sacaron otro GPS y la alarma, ¡pero no nuestro GPS! 🚗🔒'
+    ])
+    .addAnswer('Testimonio 2', { delay:1000, media: 'https://vpkvukshcvdbdlarercb.supabase.co/storage/v1/object/public/publictogiorastreo/testimonios/Testimonio%20Arturo%20Navarro.ogg' })
+    .addAnswer([
+        '*Testimonio #2*',
+        '',
+        '🚗 El cliente indica que sí encontró el carro, lo habían dejado abandonado. Todo esto gracias a Togio Rastreo. 🔍💪'
+    ], {delay:1000})
 
-const welcomeFlow = addKeyword<Provider, Database>(['hi', 'hello', 'hola'])
-    .addAnswer(`🙌 Hello welcome to this *Chatbot*`)
+// Flow para el soporte
+const flowSoporte = addKeyword(EVENTS.ACTION)
+    .addAnswer('Bienvenido al soporte de Togio Rastreo 🛠️. ¿En qué podemos ayudarte?', { media: 'https://i.imgur.com/AsvWfUX.png' });
+
+// Flow de bienvenida con las opciones
+const flowWelcome = addKeyword(['pepe'])
+    .addAnswer('Hola bienvenido a *Togio Rastreo* 👋', { media: 'https://vpkvukshcvdbdlarercb.supabase.co/storage/v1/object/public/publictogiorastreo/imagen/bienvenida.jpg', delay:1000 })
     .addAnswer(
         [
-            'I share with you the following links of interest about the project',
-            '👉 *doc* to view the documentation',
-        ].join('\n'),
-        { delay: 800, capture: true },
-        async (ctx, { fallBack }) => {
-            if (!ctx.body.toLocaleLowerCase().includes('doc')) {
-                return fallBack('You should type *doc*')
+            '¿En qué puedo ayudarte hoy? 🤔',
+            '',
+            '1️⃣ Quiero *información* y precios del servicio 📄💰',
+            '2️⃣ Ya soy cliente, necesito soporte 🛠️💬',
+            '',
+            '*Escriba la opción:*',
+        ],
+        { capture: true, delay:1000 },
+        async (ctx, { gotoFlow }) => {
+            // Aquí esperamos la respuesta del usuario y redirigimos al flow correcto
+            const userResponse = ctx.body;
+
+            if (userResponse === '1') {
+                return gotoFlow(flowInformacion);
+            } else if (userResponse === '2') {
+                return gotoFlow(flowSoporte);
+            } else {
+                return gotoFlow(flowWelcome); // Repetir el mensaje si no es una opción válida
             }
-            return
-        },
-        [discordFlow]
-    )
+        })
 
-const registerFlow = addKeyword<Provider, Database>(utils.setEvent('REGISTER_FLOW'))
-    .addAnswer(`What is your name?`, { capture: true }, async (ctx, { state }) => {
-        await state.update({ name: ctx.body })
-    })
-    .addAnswer('What is your age?', { capture: true }, async (ctx, { state }) => {
-        await state.update({ age: ctx.body })
-    })
-    .addAction(async (_, { flowDynamic, state }) => {
-        await flowDynamic(`${state.get('name')}, thanks for your information!: Your age: ${state.get('age')}`)
-    })
 
-const fullSamplesFlow = addKeyword<Provider, Database>(['samples', utils.setEvent('SAMPLES')])
-    .addAnswer(`💪 I'll send you a lot files...`)
-    .addAnswer(`Send image from Local`, { media: join(process.cwd(), 'assets', 'sample.png') })
-    .addAnswer(`Send video from URL`, {
-        media: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYTJ0ZGdjd2syeXAwMjQ4aWdkcW04OWlqcXI3Ynh1ODkwZ25zZWZ1dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LCohAb657pSdHv0Q5h/giphy.mp4',
-    })
-    .addAnswer(`Send audio from URL`, { media: 'https://cdn.freesound.org/previews/728/728142_11861866-lq.mp3' })
-    .addAnswer(`Send file from URL`, {
-        media: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    })
+
 
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, registerFlow, fullSamplesFlow])
-    
+    const adapterFlow = createFlow([flowWelcome, flowSoporte, flowInformacion])
+
     const adapterProvider = createProvider(Provider)
     const adapterDB = new Database({
         host: process.env.MYSQL_DB_HOST,
